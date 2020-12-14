@@ -10,7 +10,7 @@ from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertain
 
 from glue_astronomy.spectral_coordinates import SpectralCoordinates
 
-from specutils import Spectrum1D
+from specutils import Spectrum1D, SpectralAxis
 
 UNCERT_REF = {'std': StdDevUncertainty,
               'var': VarianceUncertainty,
@@ -36,8 +36,8 @@ class Specutils1DHandler:
         if obj.mask is not None:
             data['mask'] = obj.mask
 
-        # Include redshift (default from Spectrum1D is 0)
-        data['redshift'] = obj.redshift
+        # Include redshift in meta (default from Spectrum1D is 0)
+        data.meta.update({'redshift': obj.redshift})
 
         data.meta.update(obj.meta)
 
@@ -75,8 +75,10 @@ class Specutils1DHandler:
             kwargs = {'wcs': data.coords.sub([WCSSUB_SPECTRAL])}
 
         elif isinstance(data.coords, SpectralCoordinates):
-
-            kwargs = {'spectral_axis': data.coords.spectral_axis}
+            # Update redshift from meta in case it was updated
+            z = data.meta['redshift']
+            axis_with_z = SpectralAxis(data.coords.spectral_axis, redshift=z)
+            kwargs = {'spectral_axis': axis_with_z}
 
         else:
 
@@ -92,10 +94,9 @@ class Specutils1DHandler:
                 attribute = data.main_components[0]
             # If no specific attribute is defined, attempt to retrieve
             #  both the flux and uncertainties
-            elif any([x.label in ('flux', 'uncertainty', 'redshift') for x in data.components]):
+            elif any([x.label in ('flux', 'uncertainty') for x in data.components]):
                 attribute = [data.find_component_id('flux'),
-                             data.find_component_id('uncertainty'),
-                             data.find_component_id('redshift')]
+                             data.find_component_id('uncertainty')]
             else:
                 raise ValueError("Data object has more than one attribute, so "
                                  "you will need to specify which one to use as "
@@ -106,6 +107,7 @@ class Specutils1DHandler:
             data_kwargs = {}
 
             for attribute in attributes:
+
                 component = data.get_component(attribute)
 
                 # Get mask if there is one defined, or if this is a subset
@@ -128,7 +130,7 @@ class Specutils1DHandler:
 
                 attribute_label = attribute.label
 
-                if attribute_label not in ('flux', 'uncertainty', 'redshift'):
+                if attribute_label not in ('flux', 'uncertainty'):
                     attribute_label = 'flux'
 
                 values = values * u.Unit(component.units)
