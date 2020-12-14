@@ -36,6 +36,9 @@ class Specutils1DHandler:
         if obj.mask is not None:
             data['mask'] = obj.mask
 
+        # Include redshift (default from Spectrum1D is 0)
+        data['redshift'] = obj.redshift
+
         data.meta.update(obj.meta)
 
         return data
@@ -89,9 +92,10 @@ class Specutils1DHandler:
                 attribute = data.main_components[0]
             # If no specific attribute is defined, attempt to retrieve
             #  both the flux and uncertainties
-            elif any([x.label in ('flux', 'uncertainty') for x in data.components]):
+            elif any([x.label in ('flux', 'uncertainty', 'redshift') for x in data.components]):
                 attribute = [data.find_component_id('flux'),
-                             data.find_component_id('uncertainty')]
+                             data.find_component_id('uncertainty'),
+                             data.find_component_id('redshift')]
             else:
                 raise ValueError("Data object has more than one attribute, so "
                                  "you will need to specify which one to use as "
@@ -124,7 +128,7 @@ class Specutils1DHandler:
 
                 attribute_label = attribute.label
 
-                if attribute_label not in ('flux', 'uncertainty'):
+                if attribute_label not in ('flux', 'uncertainty', 'redshift'):
                     attribute_label = 'flux'
 
                 values = values * u.Unit(component.units)
