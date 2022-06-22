@@ -163,7 +163,7 @@ class Specutils1DHandler:
 
         return data
 
-    def to_object(self, data_or_subset, attribute=None, statistic='mean'):
+    def to_object(self, data_or_subset, attribute=None, statistic='mean', allow_chunking=True):
         """
         Convert a glue Data object to a Spectrum1D object.
 
@@ -175,6 +175,9 @@ class Specutils1DHandler:
             The attribute to use for the Spectrum1D data
         statistic : {'minimum', 'maximum', 'mean', 'median', 'sum', 'percentile'}
             The statistic to use to collapse the dataset
+        allow_chunking : `bool`, optional
+            If False, will override n_max_chunk in the Glue `compute_statistic`
+            function to ensure that no chunking is done.
         """
 
         if isinstance(data_or_subset, Subset):
@@ -259,8 +262,14 @@ class Specutils1DHandler:
                 # Collapse values and mask to profile
                 if data.ndim > 1 and statistic is not None:
                     # Get units and attach to value
-                    values = data.compute_statistic(statistic, attribute, axis=axes,
-                                                    subset_state=subset_state)
+                    print(statistic, attribute, axes, subset_state)
+                    if allow_chunking:
+                        values = data.compute_statistic(statistic, attribute, axis=axes,
+                                                        subset_state=subset_state)
+                    else:
+                        values = data.compute_statistic(statistic, attribute, axis=axes,
+                                                        subset_state=subset_state,
+                                                        n_chunk_max = attribute.data.size+1)
                     if mask is not None:
                         collapse_axes = tuple([x for x in range(0, data.ndim-1)])
                         mask = np.all(mask, collapse_axes)
