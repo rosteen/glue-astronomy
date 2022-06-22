@@ -262,14 +262,13 @@ class Specutils1DHandler:
                 # Collapse values and mask to profile
                 if data.ndim > 1 and statistic is not None:
                     # Get units and attach to value
-                    print(statistic, attribute, axes, subset_state)
                     if allow_chunking:
                         values = data.compute_statistic(statistic, attribute, axis=axes,
                                                         subset_state=subset_state)
                     else:
                         values = data.compute_statistic(statistic, attribute, axis=axes,
                                                         subset_state=subset_state,
-                                                        n_chunk_max = attribute.data.size+1)
+                                                        n_chunk_max = component.data.size+1)
                     if mask is not None:
                         collapse_axes = tuple([x for x in range(0, data.ndim-1)])
                         mask = np.all(mask, collapse_axes)
